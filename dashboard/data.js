@@ -22,11 +22,11 @@ const ORG_CHART = [
 // and the role-specific Day 2-5 engineering path (Section 4.2).
 const TASKS = [
   { id: "t1", label: "Return signed employment contract to HR", priority: "High", done: true },
-  { id: "t2", label: "Configure MFA (YubiKey + authenticator app)", priority: "High", done: false },
-  { id: "t3", label: "Test VPN connectivity (Cisco AnyConnect)", priority: "High", done: false },
-  { id: "t4", label: "Complete Security Awareness Module 1 (LMS)", priority: "Medium", done: false },
-  { id: "t5", label: "Dev environment setup — IDE, local DB, Docker", priority: "Medium", done: false },
-  { id: "t6", label: "Initiate benefits enrollment (deadline: Day 14)", priority: "Low", done: false },
+  { id: "t2", label: "Configure MFA (YubiKey + authenticator app)", priority: "High", done: false, resolveId: "mfa" },
+  { id: "t3", label: "Test VPN connectivity (Cisco AnyConnect)", priority: "High", done: false, resolveId: "vpn" },
+  { id: "t4", label: "Complete Security Awareness Module 1 (LMS)", priority: "Medium", done: false, resolveId: "training" },
+  { id: "t5", label: "Dev environment setup — IDE, local DB, Docker", priority: "Medium", done: false, resolveId: "devenv" },
+  { id: "t6", label: "Initiate benefits enrollment (deadline: Day 14)", priority: "Low", done: false, resolveId: "benefits" },
 ];
 
 // Reflects access-provisioning timeline gaps from Section 8 of the onboarding checklist.
@@ -91,8 +91,8 @@ const SETUP_STEPS = [
   { name: "VPN Access", system: "Cisco AnyConnect", status: "done", detail: "Account created T-2 days. Full access activates after MFA setup." },
   { name: "Email Account", system: "Microsoft 365 / Azure AD", status: "done", detail: "Provisioned T-3 days, accessible from Day 1." },
   { name: "SharePoint Access", system: "Microsoft 365", status: "done", detail: "Linked to Platform Team site, Day 1 access confirmed." },
-  { name: "Workday / Okta SSO", system: "Okta", status: "active", detail: "SSO account created T-3 days; enrollment confirmation pending from IT Operations." },
-  { name: "Software Installation", system: "SCCM / Intune", status: "pending", detail: "IDE, Docker, and engineering toolchain queued for push." },
+  { name: "Workday / Okta SSO", system: "Okta", status: "active", detail: "SSO account created T-3 days; enrollment confirmation pending from IT Operations.", resolveId: "okta" },
+  { name: "Software Installation", system: "SCCM / Intune", status: "pending", detail: "IDE, Docker, and engineering toolchain queued for push.", resolveId: "software" },
 ];
 
 // Communication Agent — log of automated notifications (design.md §5, Communication Agent)
@@ -148,3 +148,10 @@ const KB_ANSWERS = [
     source: { title: "IT Security Policy v2.3, §6.1-6.2", category: "Security" },
   },
 ];
+
+// Generic answer the Knowledge Agent falls back to when no keyword matches —
+// keeps the demo flowing instead of surfacing a dead-end "no match" message.
+const KB_DEFAULT_ANSWER = {
+  answer: "Here's the general guidance from the onboarding handbook: most policy questions (IT, security, travel, benefits) are covered in the documents synced to the knowledge base, and your manager or buddy can confirm anything role-specific. Try asking about VPN, password policy, data classification, expense claims, or Day 1 — those have direct citations.",
+  source: { title: "Employee-Onboarding-Checklist.md", category: "General" },
+};

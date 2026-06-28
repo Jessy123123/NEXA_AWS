@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AWS-IQ — AI Setup Assistant</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  .as-layout { display: grid; grid-template-columns: 320px 1fr; gap: 16px; padding: 24px; align-items: start; }
+  @media (max-width: 900px) { .as-layout { grid-template-columns: 1fr; } }
+
+  .as-checklist { list-style: none; margin: 0; padding: 0; font-size: 13px; }
+  .as-checklist li {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0; border-bottom: 1px solid var(--hairline-soft);
+  }
+  .as-checklist li:last-child { border-bottom: none; }
+  .as-checklist .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--hairline); flex-shrink: 0; }
+  .as-checklist li.installed .dot { background: var(--success); }
+  .as-checklist li.installed .label { color: var(--muted); text-decoration: line-through; }
+
+  .as-chat-window { height: 420px; }
+  .term {
+    background: var(--surface-dark-soft);
+    border: 1px solid var(--surface-dark-elevated);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    font-family: var(--font-code);
+    font-size: 12px;
+    line-height: 1.7;
+    color: var(--on-dark-soft);
+  }
+  .term .line { opacity: 0; animation: term-in .25s ease forwards; }
+  .term .line.ok { color: var(--success); }
+  .term .line.done { color: var(--on-dark); font-weight: 500; }
+  @keyframes term-in { to { opacity: 1; } }
+
+  .as-suggest-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+</style>
+</head>
+<body data-page="ai-setup">
+<header class="topbar">
+  <h1>AWS-IQ</h1>
+  <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
+</header>
+
+<section class="page-header">
+  <h2>AI Setup Assistant</h2>
+  <p>Tell it what you haven't installed yet — it walks through the install and confirms when it's done.</p>
+  <span class="agent-badge">Setup Agent — simulated installer (hardcoded demo, no real downloads run)</span>
+</section>
+
+<main class="as-layout">
+
+  <div class="card">
+    <h3>Your environment</h3>
+    <ul class="as-checklist" id="as-checklist"></ul>
+  </div>
+
+  <div class="card chat-card">
+    <h3>Setup Agent</h3>
+    <p style="color:var(--on-dark-soft); font-size:13px; margin-top:-8px;">
+      Try: "I haven't downloaded Python", "I don't have the VPN client", "Docker isn't installed".
+    </p>
+    <div class="chat-window as-chat-window" id="as-chat-window"></div>
+    <div class="as-suggest-row" id="as-suggest"></div>
+    <form id="as-chat-form">
+      <input id="as-chat-input" type="text" placeholder="e.g. I haven't downloaded Python yet" autocomplete="off" />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+</main>
+
+<script>
+// Hardcoded items this demo knows how to "install". Each has its own fake terminal log.
+const ITEMS = [
+  {
+    id: "python",
+    label: "Python 3.12 + pip",
+    keywords: ["python", "pip", "package"],
+    log: [
+      "$ checking for python3...",
+      "  not found",
+      "$ downloading python-3.12.7-installer...",
+      "  [##########] 100%",
+      "$ running installer...",
+      "$ pip install -r requirements.txt",
+      "  Successfully installed boto3 fastapi uvicorn",
+    ],
+  },
+  {
+    id: "vpn",
+    label: "VPN client (Cisco AnyConnect)",
+    keywords: ["vpn", "anyconnect", "cisco"],
+    log: [
+      "$ provisioning VPN profile for employee...",
+      "$ downloading Cisco AnyConnect client...",
+      "  [##########] 100%",
+      "$ installing certificate...",
+      "$ testing tunnel to corp gateway...",
+      "  connection established (12ms)",
+    ],
+  },
+  {
+    id: "docker",
+    label: "Docker Desktop",
+    keywords: ["docker"],
+    log: [
+      "$ checking for docker...",
+      "  not found",
+      "$ downloading Docker Desktop...",
+      "  [##########] 100%",
+      "$ starting docker daemon...",
+      "$ docker --version",
+      "  Docker version 27.3.1",
+    ],
+  },
+  {
+    id: "ide",
+    label: "IDE + extensions",
+    keywords: ["ide", "vscode", "vs code", "editor"],
+    log: [
+      "$ installing VS Code...",
+      "  [##########] 100%",
+      "$ installing extensions: Python, ESLint, GitLens...",
+      "  3/3 extensions installed",
+    ],
+  },
+  {
+    id: "slack",
+    label: "Slack workspace access",
+    keywords: ["slack"],
+    log: [
+      "$ provisioning Slack workspace invite...",
+      "$ sending invite to your @techventure.com.my email...",
+      "  invite sent",
+      "$ joining #platform-team, #engineering, #general...",
+      "  joined 3 channels",
+    ],
+  },
+  {
+    id: "mfa",
+    label: "MFA (YubiKey + authenticator)",
+    keywords: ["mfa", "yubikey", "authenticator", "2fa"],
+    log: [
+      "$ registering YubiKey...",
+      "$ pairing authenticator app...",
+      "$ generating backup codes...",
+      "  10 backup codes generated",
+    ],
+  },
+];
+
+const installed = new Set();
+
+function renderChecklist() {
+  const root = document.getElementById("as-checklist");
+  root.innerHTML = ITEMS.map(
+    (item) => `<li class="${installed.has(item.id) ? "installed" : ""}" data-id="${item.id}">
+      <span class="dot"></span><span class="label">${item.label}</span>
+    </li>`
+  ).join("");
+}
+
+function findItem(text) {
+  const q = text.toLowerCase();
+  return ITEMS.find((item) => item.keywords.some((kw) => q.includes(kw)));
+}
+
+function appendMsg(role, html) {
+  const win = document.getElementById("as-chat-window");
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.innerHTML = html;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+  return div;
+}
+
+function streamTerminal(container, lines, onComplete) {
+  const term = document.createElement("div");
+  term.className = "term";
+  container.appendChild(term);
+  let i = 0;
+  function next() {
+    if (i >= lines.length) {
+      onComplete();
+      return;
+    }
+    const lineEl = document.createElement("div");
+    lineEl.className = "line";
+    lineEl.textContent = lines[i];
+    term.appendChild(lineEl);
+    document.getElementById("as-chat-window").scrollTop = document.getElementById("as-chat-window").scrollHeight;
+    i++;
+    setTimeout(next, 280);
+  }
+  next();
+}
+
+function handleMessage(text) {
+  appendMsg("user", text);
+
+  const item = findItem(text);
+  if (!item) {
+    setTimeout(() => {
+      appendMsg("bot", "I'm not sure which tool you mean — try mentioning Python, VPN, Docker, an IDE, Slack, or MFA.");
+    }, 300);
+    return;
+  }
+
+  if (installed.has(item.id)) {
+    setTimeout(() => {
+      appendMsg("bot", `<b>${item.label}</b> is already installed and ready to go ✅`);
+    }, 300);
+    return;
+  }
+
+  setTimeout(() => {
+    const bot = appendMsg("bot", `Ok, I'll help you set up <b>${item.label}</b>. Setting up your environment now...`);
+    streamTerminal(bot, item.log, () => {
+      const doneLine = document.createElement("div");
+      doneLine.className = "term";
+      doneLine.innerHTML = `<div class="line ok">$ verifying installation...</div><div class="line done">✓ done</div>`;
+      bot.appendChild(doneLine);
+      appendMsg("bot", `<b>Done!</b> ${item.label} is installed and ready. Anything else you haven't set up yet?`);
+      installed.add(item.id);
+      renderChecklist();
+      document.getElementById("as-chat-window").scrollTop = document.getElementById("as-chat-window").scrollHeight;
+    });
+  }, 300);
+}
+
+function setupSuggestions() {
+  const row = document.getElementById("as-suggest");
+  const suggestions = [
+    "I haven't downloaded Python",
+    "I don't have the VPN client",
+    "Docker isn't installed",
+    "I need Slack access",
+  ];
+  row.innerHTML = suggestions.map((s) => `<button type="button" class="chip">${s}</button>`).join("");
+  row.querySelectorAll(".chip").forEach((btn) => btn.addEventListener("click", () => handleMessage(btn.textContent)));
+}
+
+document.getElementById("as-chat-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const input = document.getElementById("as-chat-input");
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = "";
+  handleMessage(text);
+});
+
+renderChecklist();
+setupSuggestions();
+appendMsg("bot", "Hi! Tell me what you haven't downloaded or set up yet, and I'll walk through it with you.");
+</script>
+</body>
+</html>

@@ -46,14 +46,14 @@ function ccRenderPath() {
   SETUP_STEPS.forEach((s) => {
     const state = s.status === "done" ? "done" : s.status === "active" ? "active" : "pending";
     items.push({
-      kind: "setup", state, label: s.name, meta: s.system,
+      kind: "setup", state, label: s.name, meta: s.system, resolveId: s.resolveId,
       tag: state === "active" ? "active" : "setup",
       tagText: state === "active" ? "In progress" : "Setup",
     });
   });
   TASKS.forEach((t, i) => {
     items.push({
-      kind: "task", taskIndex: i, state: t.done ? "done" : "pending",
+      kind: "task", taskIndex: i, state: t.done ? "done" : "pending", resolveId: t.resolveId,
       label: t.label, meta: `${t.priority} priority`, tag: "task", tagText: "Task",
     });
   });
@@ -63,25 +63,42 @@ function ccRenderPath() {
   if (countEl) countEl.textContent = remaining ? `· ${remaining} to go` : "· all done ✓";
 
   root.innerHTML = items
-    .map((i) => {
+    .map((i, idx) => {
       const dot = i.state === "done" ? "✓" : "";
       const clickable = i.kind === "task" ? " clickable" : "";
       const data = i.kind === "task" ? ` data-task="${i.taskIndex}"` : "";
+      const resolveBtn = i.state !== "done" && i.resolveId
+        ? `<button type="button" class="resolve-btn" data-resolve="${i.resolveId}" data-path-idx="${idx}">Resolve now</button>`
+        : "";
       return `<div class="path-item ${i.state}${clickable}"${data}>
         <div class="path-dot">${dot}</div>
         <div class="path-label">${i.label}<span class="path-tag ${i.tag}">${i.tagText}</span></div>
         <div class="path-meta">${i.meta}</div>
+        ${resolveBtn}
       </div>`;
     })
     .join("");
 
   // task dots are clickable to toggle done — keeps the path and Task Check in sync
   root.querySelectorAll(".path-item.clickable").forEach((el) => {
-    el.addEventListener("click", () => {
+    el.addEventListener("click", (e) => {
+      if (e.target.closest(".resolve-btn")) return;
       const idx = +el.dataset.task;
       TASKS[idx].done = !TASKS[idx].done;
       ccRenderTaskCheckList();
       ccRenderProgress();
+    });
+  });
+
+  // "Resolve now" buttons drive the same Setup Agent simulation as chat, so judges
+  // can demo every incomplete item with one click instead of typing the right phrase.
+  root.querySelectorAll(".resolve-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const item = ccFindInstallItemById(btn.dataset.resolve);
+      if (!item) return;
+      ccAppend("user", `Resolve: ${item.label}`);
+      ccHandleInstall(item);
     });
   });
 }
@@ -303,10 +320,8 @@ function ccCommAnswer(q) {
 function ccKnowledgeAnswer(q) {
   const lc = q.toLowerCase();
   const hit = KB_ANSWERS.find((e) => e.keywords.some((kw) => lc.includes(kw)));
-  if (hit) {
-    return `${hit.answer}<span class="citation">Source: ${hit.source.title} (${hit.source.category})</span>`;
-  }
-  return `I couldn't find a confident match in the knowledge base. Try keywords like “VPN”, “password”, “expense”, “data classification”, or “Day 1”.`;
+  const entry = hit || KB_DEFAULT_ANSWER;
+  return `${entry.answer}<span class="citation">Source: ${entry.source.title} (${entry.source.category})</span>`;
 }
 
 const AGENT_ANSWER = {
@@ -324,10 +339,208 @@ function ccAppend(role, html, extraClass) {
   div.innerHTML = html;
   win.appendChild(div);
   win.scrollTop = win.scrollHeight;
+  return div;
+}
+
+// ---- Setup Agent: install simulation (hardcoded "haven't downloaded X" flow) ----
+// Lives inside the same Orchestrator chatbox — the Orchestrator still routes here,
+// it just hands off to a streamed fake-terminal response instead of a one-line answer.
+
+const INSTALL_ITEMS = [
+  {
+    id: "python", label: "Python 3.12 + pip", keywords: ["python", "pip", "package"],
+    taskKeywords: ["dev environment"],
+    log: [
+      "$ checking for python3...", "  not found",
+      "$ downloading python-3.12.7-installer...", "  [##########] 100%",
+      "$ running installer...", "$ pip install -r requirements.txt",
+      "  Successfully installed boto3 fastapi uvicorn",
+    ],
+  },
+  {
+    id: "vpn", label: "VPN client (Cisco AnyConnect)", keywords: ["vpn", "anyconnect", "cisco"],
+    taskKeywords: ["vpn"], setupKeywords: ["vpn"],
+    log: [
+      "$ provisioning VPN profile for employee...",
+      "$ downloading Cisco AnyConnect client...", "  [##########] 100%",
+      "$ installing certificate...", "$ testing tunnel to corp gateway...",
+      "  connection established (12ms)",
+    ],
+  },
+  {
+    id: "docker", label: "Docker Desktop", keywords: ["docker"],
+    taskKeywords: ["dev environment"],
+    log: [
+      "$ checking for docker...", "  not found",
+      "$ downloading Docker Desktop...", "  [##########] 100%",
+      "$ starting docker daemon...", "$ docker --version", "  Docker version 27.3.1",
+    ],
+  },
+  {
+    id: "ide", label: "IDE + extensions", keywords: ["ide", "vscode", "vs code", "editor"],
+    taskKeywords: ["dev environment"],
+    log: [
+      "$ installing VS Code...", "  [##########] 100%",
+      "$ installing extensions: Python, ESLint, GitLens...", "  3/3 extensions installed",
+    ],
+  },
+  {
+    id: "slack", label: "Slack workspace access", keywords: ["slack"],
+    log: [
+      "$ provisioning Slack workspace invite...",
+      "$ sending invite to your @techventure.com.my email...", "  invite sent",
+      "$ joining #platform-team, #engineering, #general...", "  joined 3 channels",
+    ],
+  },
+  {
+    id: "mfa", label: "MFA (YubiKey + authenticator)", keywords: ["mfa", "yubikey", "authenticator", "2fa"],
+    taskKeywords: ["mfa"],
+    log: [
+      "$ registering YubiKey...", "$ pairing authenticator app...",
+      "$ generating backup codes...", "  10 backup codes generated",
+    ],
+  },
+  {
+    id: "training", label: "Security Awareness Module 1", keywords: ["security awareness", "training module", "lms"],
+    taskKeywords: ["security awareness"],
+    log: [
+      "$ opening LMS — Security Awareness Module 1...",
+      "$ loading course content...", "  [##########] 100%",
+      "$ submitting quiz answers...", "  score: 9/10 — passed",
+      "$ recording completion in LMS...",
+    ],
+  },
+  {
+    id: "benefits", label: "Benefits enrollment", keywords: ["benefits", "enrollment", "enroll"],
+    taskKeywords: ["benefits enrollment"],
+    log: [
+      "$ opening Workday benefits portal...",
+      "$ loading plan options...", "  [##########] 100%",
+      "$ submitting elections (medical, dental, EPF top-up)...",
+      "  enrollment confirmed",
+    ],
+  },
+  {
+    id: "okta", label: "Workday / Okta SSO", keywords: ["okta", "sso", "workday"],
+    setupKeywords: ["okta"],
+    log: [
+      "$ checking Okta enrollment status...", "  pending confirmation",
+      "$ confirming enrollment with IT Operations...",
+      "$ syncing Workday SSO profile...", "  sync complete",
+    ],
+  },
+  {
+    id: "software", label: "Software Installation (SCCM / Intune)", keywords: ["software installation", "sccm", "intune"],
+    setupKeywords: ["software installation"],
+    log: [
+      "$ connecting to SCCM / Intune...",
+      "$ pushing engineering toolchain package...", "  [##########] 100%",
+      "$ installing IDE, Docker, local DB tooling...",
+      "  all packages installed",
+    ],
+  },
+  {
+    id: "devenv", label: "Dev environment (IDE, local DB, Docker)", keywords: ["dev environment", "local db", "devenv"],
+    taskKeywords: ["dev environment"], setupKeywords: ["software installation"],
+    log: [
+      "$ installing Docker Desktop...", "  [##########] 100%",
+      "$ installing VS Code + extensions...", "  [##########] 100%",
+      "$ provisioning local Postgres instance...", "  ready on :5432",
+    ],
+  },
+];
+
+const INSTALL_INTENT_RE = /(haven'?t (downloaded|installed|got|set ?up)|don'?t have|isn'?t installed|not installed|need (to )?(install|download|set ?up)|how do i (install|download|set ?up)|help me (install|download|set ?up))/i;
+
+const ccInstalled = new Set();
+
+function ccFindInstallItem(text) {
+  const q = text.toLowerCase();
+  return INSTALL_ITEMS.find((item) => item.keywords.some((kw) => q.includes(kw)));
+}
+function ccFindInstallItemById(id) {
+  return INSTALL_ITEMS.find((item) => item.id === id);
+}
+
+function ccStreamTerminal(container, lines, onComplete) {
+  const term = document.createElement("div");
+  term.className = "term";
+  container.appendChild(term);
+  const win = document.getElementById("cc-chat-window");
+  let i = 0;
+  function next() {
+    if (i >= lines.length) { onComplete(); return; }
+    const lineEl = document.createElement("div");
+    lineEl.className = "line";
+    lineEl.textContent = lines[i];
+    term.appendChild(lineEl);
+    win.scrollTop = win.scrollHeight;
+    i++;
+    setTimeout(next, 280);
+  }
+  next();
+}
+
+// Ties a completed "install" back into the real Task Check list and progress bar.
+function ccApplyInstallProgress(item) {
+  let changed = false;
+  if (item.taskKeywords) {
+    TASKS.forEach((t) => {
+      if (!t.done && item.taskKeywords.some((kw) => t.label.toLowerCase().includes(kw))) {
+        t.done = true;
+        changed = true;
+      }
+    });
+  }
+  if (item.setupKeywords) {
+    SETUP_STEPS.forEach((s) => {
+      if (s.status !== "done" && item.setupKeywords.some((kw) => s.name.toLowerCase().includes(kw))) {
+        s.status = "done";
+        changed = true;
+      }
+    });
+  }
+  if (changed) {
+    ccRenderTaskCheckList();
+    ccRenderProgress();
+  }
+}
+
+function ccHandleInstall(item) {
+  ccAppend("route", `Orchestrator → routing to <b>Setup Agent</b>…`);
+  setTimeout(() => {
+    if (ccInstalled.has(item.id)) {
+      ccAppend("bot", `<span class="agent-tag tag-setup">Setup Agent</span><br/><b>${item.label}</b> is already installed and ready to go ✅`);
+      return;
+    }
+    const bot = ccAppend(
+      "bot",
+      `<span class="agent-tag tag-setup">Setup Agent</span><br/>Ok, I'll help you set up <b>${item.label}</b>. Setting up your environment now...`
+    );
+    ccStreamTerminal(bot, item.log, () => {
+      const doneWrap = document.createElement("div");
+      doneWrap.className = "term";
+      doneWrap.innerHTML = `<div class="line ok">$ verifying installation...</div><div class="line done">✓ done</div>`;
+      bot.appendChild(doneWrap);
+      document.getElementById("cc-chat-window").scrollTop = document.getElementById("cc-chat-window").scrollHeight;
+      ccAppend("bot", `<b>Done!</b> ${item.label} is installed and ready. Anything else you haven't set up yet?`);
+      ccInstalled.add(item.id);
+      ccApplyInstallProgress(item);
+    });
+  }, 450);
 }
 
 function ccHandle(question) {
   ccAppend("user", question);
+
+  if (INSTALL_INTENT_RE.test(question.toLowerCase())) {
+    const installItem = ccFindInstallItem(question);
+    if (installItem) {
+      ccHandleInstall(installItem);
+      return;
+    }
+  }
+
   const agent = ccRoute(question);
   const label = AGENT_LABELS[agent];
   // orchestrator routing line
@@ -353,7 +566,7 @@ function ccSetupChat() {
     "What's my setup progress?",
     "Who's my manager?",
     "What are my tasks today?",
-    "How do I get VPN access?",
+    "I haven't downloaded Python",
     "Did my welcome email send?",
   ];
   const row = document.getElementById("cc-suggest");
