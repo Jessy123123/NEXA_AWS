@@ -1,4 +1,4 @@
-# GenAI Hackathon — Starter Kit
+# GenAI Hackathon — Starter Kit #
 
 ## What's Inside
 
