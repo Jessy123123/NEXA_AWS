@@ -32,15 +32,57 @@ function ccRenderProgress() {
   fill.style.width = overall + "%";
   fill.textContent = overall + "%";
 
-  const root = document.getElementById("cc-setup-steps");
-  root.innerHTML = "";
-  SETUP_STEPS.forEach((step) => {
-    const div = document.createElement("div");
-    div.className = "step-detail " + step.status;
-    const mark = step.status === "done" ? "✓" : step.status === "active" ? "●" : "○";
-    div.innerHTML = `<div class="step-name">${mark} ${step.name}</div>
-      <div class="step-meta">${step.system} — ${step.detail}</div>`;
-    root.appendChild(div);
+  ccRenderPath();
+}
+
+// Onboarding journey as a vertical bubble-dot timeline: done = filled circle
+// with a tick, in-progress = filled accent dot, pending = hollow bubble.
+// Setup steps come first (provisioning sequence), then personal tasks.
+function ccRenderPath() {
+  const root = document.getElementById("cc-path");
+  if (!root) return;
+
+  const items = [];
+  SETUP_STEPS.forEach((s) => {
+    const state = s.status === "done" ? "done" : s.status === "active" ? "active" : "pending";
+    items.push({
+      kind: "setup", state, label: s.name, meta: s.system,
+      tag: state === "active" ? "active" : "setup",
+      tagText: state === "active" ? "In progress" : "Setup",
+    });
+  });
+  TASKS.forEach((t, i) => {
+    items.push({
+      kind: "task", taskIndex: i, state: t.done ? "done" : "pending",
+      label: t.label, meta: `${t.priority} priority`, tag: "task", tagText: "Task",
+    });
+  });
+
+  const remaining = items.filter((i) => i.state !== "done").length;
+  const countEl = document.getElementById("cc-path-count");
+  if (countEl) countEl.textContent = remaining ? `· ${remaining} to go` : "· all done ✓";
+
+  root.innerHTML = items
+    .map((i) => {
+      const dot = i.state === "done" ? "✓" : "";
+      const clickable = i.kind === "task" ? " clickable" : "";
+      const data = i.kind === "task" ? ` data-task="${i.taskIndex}"` : "";
+      return `<div class="path-item ${i.state}${clickable}"${data}>
+        <div class="path-dot">${dot}</div>
+        <div class="path-label">${i.label}<span class="path-tag ${i.tag}">${i.tagText}</span></div>
+        <div class="path-meta">${i.meta}</div>
+      </div>`;
+    })
+    .join("");
+
+  // task dots are clickable to toggle done — keeps the path and Task Check in sync
+  root.querySelectorAll(".path-item.clickable").forEach((el) => {
+    el.addEventListener("click", () => {
+      const idx = +el.dataset.task;
+      TASKS[idx].done = !TASKS[idx].done;
+      ccRenderTaskCheckList();
+      ccRenderProgress();
+    });
   });
 }
 
@@ -61,8 +103,14 @@ function ccRenderTaskItem(item, listId, toggle) {
   }
   list.appendChild(li);
 }
-function ccRenderTasks() {
+function ccRenderTaskCheckList() {
+  const list = document.getElementById("cc-tasks-list");
+  if (!list) return;
+  list.innerHTML = "";
   TASKS.forEach((t) => ccRenderTaskItem(t, "cc-tasks-list", true));
+}
+function ccRenderTasks() {
+  ccRenderTaskCheckList();
   INCIDENTS.forEach((i) => ccRenderTaskItem(i, "cc-incidents-list", false));
   TRAINING.forEach((t) => ccRenderTaskItem(t, "cc-training-list", false));
 }
@@ -83,20 +131,23 @@ function ccSetupTabs() {
 function ccRenderCommThread() {
   const root = document.getElementById("cc-comm-thread");
   root.innerHTML = "";
+  const ICON = { Email: "✉", Teams: "\u{1F4AC}", Calendar: "\u{1F4C5}" };
   COMMUNICATIONS.forEach((c) => {
+    const cls = c.channel.toLowerCase();
     const div = document.createElement("div");
-    div.className = "comm-bubble";
+    div.className = "comm-item";
     div.innerHTML = `
-      <div class="top">
-        <span class="chan">${c.channel}</span>
-        <span class="subj">${c.subject}</span>
-        <span class="time">${c.time}</span>
-      </div>
-      <div class="rcpt">${c.recipient}</div>
-      <div style="margin-top:6px"><span class="comm-status ${c.status}">${c.status}</span></div>`;
+      <div class="comm-ico ${cls}">${ICON[c.channel] || "•"}</div>
+      <div class="comm-body">
+        <div class="comm-row1">
+          <span class="comm-subj">${c.subject}</span>
+          <span class="comm-status ${c.status}">${c.status}</span>
+        </div>
+        <div class="comm-meta"><span class="chan">${c.channel}</span> &middot; ${c.recipient}</div>
+        <div class="comm-time">${c.time}</div>
+      </div>`;
     root.appendChild(div);
   });
-  root.scrollTop = root.scrollHeight;
 }
 
 // ---------- Organization chart ----------
@@ -132,13 +183,13 @@ function ccRenderOrgTree() {
       </li>
     </ul>`;
   root.querySelectorAll(".node").forEach((el) => {
-    el.addEventListener("click", (e) => {
+    el.addEventListener("click", () => {
       const person = ccOrg(el.dataset.id);
-      ccShowContact(person, e);
+      ccShowContact(person, el);
     });
   });
 }
-function ccShowContact(person, evt) {
+function ccShowContact(person, nodeEl) {
   const popup = document.getElementById("cc-contact-popup");
   if (!popup) return;
   if (person.me) { popup.hidden = true; return; }
@@ -149,10 +200,21 @@ function ccShowContact(person, evt) {
     <a href="mailto:${person.email}">Email ${person.email}</a>
     <button type="button" id="cc-popup-close">Close</button>`;
   popup.hidden = false;
-  const pad = 12;
-  let x = evt.clientX, y = evt.clientY + 8;
-  popup.style.left = Math.min(x, window.innerWidth - popup.offsetWidth - pad) + "px";
-  popup.style.top = Math.min(y, window.innerHeight - popup.offsetHeight - pad) + "px";
+
+  // position beside the clicked node (viewport coords; popup is position:fixed)
+  const rect = nodeEl.getBoundingClientRect();
+  const pad = 10;
+  const pw = popup.offsetWidth, ph = popup.offsetHeight;
+  let left = rect.right + 8;                 // default: to the right of the node
+  if (left + pw + pad > window.innerWidth) {
+    left = rect.left - pw - 8;               // not enough room → flip to the left
+  }
+  left = Math.max(pad, Math.min(left, window.innerWidth - pw - pad));
+  let top = rect.top;                        // align with the node's top
+  top = Math.max(pad, Math.min(top, window.innerHeight - ph - pad));
+  popup.style.left = left + "px";
+  popup.style.top = top + "px";
+
   document.getElementById("cc-popup-close").addEventListener("click", () => (popup.hidden = true));
 }
 document.addEventListener("click", (e) => {

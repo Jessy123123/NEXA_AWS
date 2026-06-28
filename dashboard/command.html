@@ -62,20 +62,28 @@
   }
   .suggest:hover { color: var(--on-dark); border-color: var(--on-dark-soft); }
 
-  /* communication single thread */
-  .comm-thread { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
-  .comm-bubble {
-    background: var(--canvas); border: 1px solid var(--hairline);
-    border-radius: 10px; padding: 10px 12px; font-size: 13px;
+  /* communication — channel-iconed activity feed */
+  .comm-thread { display: flex; flex-direction: column; max-height: 340px; overflow-y: auto; padding-right: 4px; }
+  .comm-item { display: flex; gap: 12px; position: relative; }
+  .comm-ico {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; z-index: 1;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1;
   }
-  .comm-bubble .top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
-  .comm-bubble .chan {
-    font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-    color: var(--primary); background: var(--surface-cream-strong); padding: 2px 8px; border-radius: 9999px;
+  .comm-ico.email { background: #e7f0fa; color: #0073bb; }
+  .comm-ico.teams { background: #ecedf6; color: #5b5fc7; }
+  .comm-ico.calendar { background: #fff3e0; color: #b25900; }
+  /* vertical thread connector between items */
+  .comm-item:not(:last-child)::before {
+    content: ""; position: absolute; left: 16px; top: 34px; bottom: -2px; width: 2px; background: var(--hairline-soft);
   }
-  .comm-bubble .subj { font-weight: 500; color: var(--body-strong); }
-  .comm-bubble .rcpt { color: var(--muted); font-size: 12px; margin-top: 2px; }
-  .comm-bubble .time { color: var(--muted-soft); font-size: 11px; font-family: var(--font-code); margin-left: auto; }
+  .comm-body { flex: 1; min-width: 0; padding-bottom: 16px; }
+  .comm-item:last-child .comm-body { padding-bottom: 0; }
+  .comm-row1 { display: flex; align-items: flex-start; gap: 8px; }
+  .comm-subj { font-weight: 600; color: var(--body-strong); font-size: 14px; flex: 1; line-height: 1.3; }
+  .comm-meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
+  .comm-meta .chan { font-weight: 600; color: var(--body); }
+  .comm-time { color: var(--muted-soft); font-size: 11px; font-family: var(--font-code); margin-top: 3px; }
+  .comm-status { flex-shrink: 0; }
 
   /* ---- organization chart (tree) ---- */
   .org-card { grid-column: 1 / -1; }
@@ -109,6 +117,50 @@
   .node .rl { color: var(--muted); font-size: 12px; margin-top: 2px; }
   .node.lead { border-top: 3px solid var(--accent-amber); }
   .node.me { border-color: var(--primary); background: #fff7f0; }
+  /* contact popup pinned to viewport so it lands next to the clicked node */
+  #cc-contact-popup { position: fixed; z-index: 1000; max-width: 260px; }
+
+  /* ---- onboarding path (vertical timeline) ---- */
+  .path-head {
+    margin-top: 16px; margin-bottom: 4px; font-size: 11px; font-weight: 600;
+    color: var(--body-strong); text-transform: uppercase; letter-spacing: 1px;
+  }
+  .path-head span { color: var(--muted); font-weight: 500; }
+  .path { position: relative; margin-top: 8px; }
+  .path-item { position: relative; padding: 0 0 16px 36px; }
+  .path-item:last-child { padding-bottom: 0; }
+  /* the connecting line (the path) */
+  .path-item::before {
+    content: ""; position: absolute; left: 11px; top: 6px; bottom: -6px;
+    width: 2px; background: var(--hairline);
+  }
+  .path-item:last-child::before { display: none; }
+  .path-item.done::before { background: var(--success); }
+  /* the bubble dot */
+  .path-dot {
+    position: absolute; left: 0; top: 0; width: 24px; height: 24px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; z-index: 1;
+    font-size: 13px; font-weight: 700; line-height: 1;
+    border: 2px solid var(--hairline); background: var(--surface-card); color: transparent;
+  }
+  .path-item.done .path-dot { background: var(--success); border-color: var(--success); color: #fff; }
+  .path-item.active .path-dot { border-color: var(--primary); background: var(--primary); color: #fff; }
+  /* pending = hollow bubble with a small inner dot */
+  .path-item.pending .path-dot::after {
+    content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--hairline);
+  }
+  .path-item.clickable { cursor: pointer; }
+  .path-item.clickable:hover .path-dot { border-color: var(--primary); }
+  .path-label { font-weight: 500; color: var(--body-strong); font-size: 14px; }
+  .path-item.done .path-label { color: var(--muted); }
+  .path-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .path-tag {
+    font-size: 10px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+    padding: 1px 7px; border-radius: 9999px; margin-left: 6px; vertical-align: 1px;
+  }
+  .path-tag.setup { background: #e6f3f3; color: #0b6b69; }
+  .path-tag.task { background: #fff3e0; color: var(--warning); }
+  .path-tag.active { background: #fde9d6; color: var(--primary); }
 
   .tasks-tabs .tab { font-size: 13px; padding: 6px 12px; }
   .mini-summary { display: flex; gap: 16px; margin-bottom: 12px; }
@@ -149,7 +201,8 @@
       </div>
       <div class="progress-meta"><span>Overall completion</span><span id="cc-overall-2">0%</span></div>
       <div class="progress-track"><div class="progress-fill" id="cc-progress-fill" style="width:0%">0%</div></div>
-      <div id="cc-setup-steps"></div>
+      <div class="path-head">Onboarding Path <span id="cc-path-count"></span></div>
+      <div class="path" id="cc-path"></div>
     </div>
 
     <div class="card">

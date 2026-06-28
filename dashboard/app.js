@@ -204,22 +204,48 @@ function renderOverview() {
   const root = document.getElementById("overview-grid");
   if (!root) return;
   const doneCount = SETUP_STEPS.filter((s) => s.status === "done").length;
-  const pct = Math.round((doneCount / SETUP_STEPS.length) * 100);
+  const setupPct = Math.round((doneCount / SETUP_STEPS.length) * 100);
+  const tasksDone = TASKS.filter((t) => t.done).length;
+  const tasksPct = Math.round((tasksDone / TASKS.length) * 100);
+  const overall = Math.round((setupPct + tasksPct) / 2);
   const openTasks = TASKS.filter((t) => !t.done).length;
+  const commsSent = COMMUNICATIONS.filter((c) => c.status === "Sent").length;
+
+  const hero = document.getElementById("ov-hero");
+  if (hero) {
+    hero.innerHTML = `
+      <div>
+        <div class="ov-pct">${overall}%</div>
+        <div class="ov-pct-label">Onboarding complete</div>
+      </div>
+      <div class="ov-hero-mid">
+        <div class="ov-sub">${EMPLOYEE.name} · ${EMPLOYEE.title}</div>
+        <div class="ov-bar"><div style="width:${overall}%"></div></div>
+        <div class="ov-stats">
+          <div><div class="n">${setupPct}%</div><div class="l">IT Setup</div></div>
+          <div><div class="n">${openTasks}</div><div class="l">Open tasks</div></div>
+          <div><div class="n">${commsSent}</div><div class="l">Messages sent</div></div>
+        </div>
+      </div>
+      <a class="ov-cta" href="command.html">Open Command Center →</a>`;
+  }
+
   const cards = [
-    { label: "Profile Agent", href: "profile.html", h: EMPLOYEE.name, p: EMPLOYEE.title },
-    { label: "Setup Agent", href: "setup.html", h: pct + "% complete", p: `${doneCount}/${SETUP_STEPS.length} provisioning steps done` },
-    { label: "Knowledge Agent", href: "knowledge.html", h: KB_ANSWERS.length + " topics indexed", p: "Ask IT, HR, Security, Finance questions" },
-    { label: "Communication Agent", href: "communication.html", h: COMMUNICATIONS.length + " messages sent", p: "Welcome email, manager alerts, Teams, calendar" },
-    { label: "Daily Task Agent", href: "tasks.html", h: openTasks + " tasks open", p: `${INCIDENTS.length} incidents, ${TRAINING.length} trainings due` },
+    { label: "Profile Agent", href: "profile.html", ico: "\u{1F464}", h: EMPLOYEE.name, p: EMPLOYEE.title },
+    { label: "Setup Agent", href: "setup.html", ico: "⚙️", h: setupPct + "% complete", p: `${doneCount}/${SETUP_STEPS.length} provisioning steps done` },
+    { label: "Knowledge Agent", href: "knowledge.html", ico: "\u{1F4DA}", h: KB_ANSWERS.length + " topics indexed", p: "Ask IT, HR, Security, Finance questions" },
+    { label: "Communication Agent", href: "communication.html", ico: "✉️", h: COMMUNICATIONS.length + " messages", p: `${commsSent} sent · welcome, manager, Teams, calendar` },
+    { label: "Daily Task Agent", href: "tasks.html", ico: "✅", h: openTasks + " tasks open", p: `${INCIDENTS.length} incidents, ${TRAINING.length} trainings due` },
   ];
   root.innerHTML = cards
     .map(
       (c) => `
       <a class="agent-card" href="${c.href}">
+        <div class="ov-ico">${c.ico}</div>
         <div class="agent-label">${c.label}</div>
         <div class="stat">${c.h}</div>
         <p>${c.p}</p>
+        <span class="ov-view">View details →</span>
       </a>`
     )
     .join("");

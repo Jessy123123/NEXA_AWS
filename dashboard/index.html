@@ -7,6 +7,32 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
+<style>
+  .ov-hero {
+    margin: 24px 24px 0; background: var(--surface-dark); color: var(--on-dark);
+    border-radius: 10px; padding: 24px 28px; display: flex; align-items: center;
+    gap: 28px; flex-wrap: wrap;
+  }
+  .ov-pct { font-size: 46px; font-weight: 700; line-height: 1; }
+  .ov-pct-label { color: var(--on-dark-soft); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-top: 6px; }
+  .ov-hero-mid { flex: 1; min-width: 240px; }
+  .ov-sub { color: var(--on-dark-soft); font-size: 13px; }
+  .ov-bar { background: rgba(255,255,255,.15); border-radius: 9999px; height: 10px; overflow: hidden; margin-top: 10px; }
+  .ov-bar > div { background: var(--primary); height: 100%; border-radius: 9999px; transition: width .4s ease; }
+  .ov-stats { display: flex; gap: 24px; margin-top: 14px; }
+  .ov-stats .n { font-size: 22px; font-weight: 700; }
+  .ov-stats .l { color: var(--on-dark-soft); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+  .ov-cta {
+    background: var(--primary); color: #fff; text-decoration: none; font-weight: 600;
+    padding: 12px 20px; border-radius: 8px; font-size: 14px; white-space: nowrap;
+  }
+  .ov-cta:hover { background: var(--primary-active); }
+  .agent-card .ov-ico {
+    width: 40px; height: 40px; border-radius: 10px; background: var(--surface-cream-strong);
+    display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 12px;
+  }
+  .agent-card .ov-view { color: var(--primary); font-size: 13px; font-weight: 600; margin-top: 12px; display: inline-block; }
+</style>
 </head>
 <body data-page="overview">
 <header class="topbar">
@@ -18,6 +44,8 @@
   <h2>Welcome back, Aisha</h2>
   <p>Here's a snapshot of every agent working on your onboarding right now. Click into any agent for details.</p>
 </section>
+
+<section class="ov-hero" id="ov-hero"></section>
 
 <main class="summary-grid" id="overview-grid"></main>
 
