@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AWS-IQ — Command Center</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  /* ---- Command Center layout (page-specific) ---- */
+  .cmd-layout {
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 16px;
+    padding: 24px;
+    align-items: start;
+  }
+  @media (max-width: 1000px) { .cmd-layout { grid-template-columns: 1fr; } }
+  .cmd-col { display: flex; flex-direction: column; gap: 16px; }
+
+  .profile-mini { display: flex; gap: 14px; align-items: center; }
+  .avatar-initials {
+    width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+    background: var(--primary); color: var(--on-primary);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 22px;
+  }
+  .profile-mini h2 { margin: 0 0 2px; font-family: var(--font-display); font-weight: 400; font-size: 22px; letter-spacing: -.3px; }
+  .profile-mini p { margin: 1px 0; color: var(--muted); font-size: 13px; }
+
+  .section-label {
+    color: var(--primary); font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px;
+  }
+  .progress-meta { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+
+  /* orchestrator chat */
+  .cmd-chat .chat-window { height: 360px; }
+  .agent-tag {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 5px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .agent-tag::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .tag-profile { color: #ff9900; }
+  .tag-setup { color: #2bb0ad; }
+  .tag-knowledge { color: #6aa5e0; }
+  .tag-communication { color: #f2c14e; }
+  .tag-task { color: #ff8a8a; }
+
+  .msg.route {
+    background: transparent; color: var(--on-dark-soft); font-family: var(--font-code);
+    font-size: 12px; padding: 2px 4px; max-width: 100%; margin-bottom: 6px;
+  }
+  .msg.route b { color: var(--accent-amber); font-weight: 500; }
+
+  .suggest-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .suggest {
+    background: var(--surface-dark-soft); border: 1px solid var(--surface-dark-elevated);
+    color: var(--on-dark-soft); border-radius: 9999px; padding: 6px 12px;
+    font-size: 12px; font-family: var(--font-body); cursor: pointer;
+  }
+  .suggest:hover { color: var(--on-dark); border-color: var(--on-dark-soft); }
+
+  /* communication single thread */
+  .comm-thread { display: flex; flex-direction: column; gap: 10px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
+  .comm-bubble {
+    background: var(--canvas); border: 1px solid var(--hairline);
+    border-radius: 10px; padding: 10px 12px; font-size: 13px;
+  }
+  .comm-bubble .top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+  .comm-bubble .chan {
+    font-size: 10px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--primary); background: var(--surface-cream-strong); padding: 2px 8px; border-radius: 9999px;
+  }
+  .comm-bubble .subj { font-weight: 500; color: var(--body-strong); }
+  .comm-bubble .rcpt { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .comm-bubble .time { color: var(--muted-soft); font-size: 11px; font-family: var(--font-code); margin-left: auto; }
+
+  /* ---- organization chart (tree) ---- */
+  .org-card { grid-column: 1 / -1; }
+  .org-scroll { overflow-x: auto; padding: 8px 2px 4px; }
+  .tree { display: inline-block; min-width: 100%; text-align: center; }
+  .tree ul { padding-top: 22px; position: relative; display: flex; justify-content: center; margin: 0; list-style: none; }
+  .tree > ul { padding-top: 0; }
+  .tree li { position: relative; padding: 22px 12px 0; text-align: center; }
+  .tree li::before, .tree li::after {
+    content: ""; position: absolute; top: 0; right: 50%;
+    border-top: 2px solid var(--hairline); width: 50%; height: 22px;
+  }
+  .tree li::after { right: auto; left: 50%; border-left: 2px solid var(--hairline); }
+  .tree li:only-child::after, .tree li:only-child::before { display: none; }
+  .tree li:only-child { padding-top: 0; }
+  .tree li:first-child::before, .tree li:last-child::after { border: 0 none; }
+  .tree li:last-child::before { border-right: 2px solid var(--hairline); border-radius: 0 6px 0 0; }
+  .tree li:first-child::after { border-radius: 6px 0 0 0; }
+  .tree ul ul::before {
+    content: ""; position: absolute; top: 0; left: 50%;
+    border-left: 2px solid var(--hairline); width: 0; height: 22px;
+  }
+  .node {
+    display: inline-block; min-width: 156px; max-width: 200px; padding: 10px 14px;
+    background: var(--surface-card); border: 1px solid var(--hairline);
+    border-radius: 8px; cursor: pointer; text-align: center;
+    transition: border-color .12s ease, box-shadow .12s ease;
+  }
+  .node:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(35,47,62,.12); }
+  .node .nm { font-weight: 600; color: var(--body-strong); font-size: 14px; }
+  .node .rl { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .node.lead { border-top: 3px solid var(--accent-amber); }
+  .node.me { border-color: var(--primary); background: #fff7f0; }
+
+  .tasks-tabs .tab { font-size: 13px; padding: 6px 12px; }
+  .mini-summary { display: flex; gap: 16px; margin-bottom: 12px; }
+  .mini-summary .stat-box { text-align: left; }
+  .mini-summary .num { font-family: var(--font-display); font-size: 26px; color: var(--ink); line-height: 1; }
+  .mini-summary .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+</style>
+</head>
+<body data-page="command">
+<header class="topbar">
+  <h1>AWS-IQ</h1>
+  <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
+</header>
+
+<section class="page-header">
+  <h2>Onboarding Command Center</h2>
+  <p>One view: your profile, every task's progress, the communication log, and a single chat where the orchestrator routes you to all five agents.</p>
+</section>
+
+<main class="cmd-layout">
+  <!-- LEFT: profile + progress + tasks -->
+  <div class="cmd-col">
+    <div class="card profile-mini">
+      <div class="avatar-initials" id="cc-avatar">AR</div>
+      <div>
+        <h2 id="cc-name">—</h2>
+        <p id="cc-title">—</p>
+        <p id="cc-meta">—</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Onboarding Progress</div>
+      <div class="mini-summary">
+        <div class="stat-box"><div class="num" id="cc-overall">0%</div><div class="lbl">Overall</div></div>
+        <div class="stat-box"><div class="num" id="cc-setup-pct">0%</div><div class="lbl">IT Setup</div></div>
+        <div class="stat-box"><div class="num" id="cc-tasks-pct">0%</div><div class="lbl">Tasks done</div></div>
+      </div>
+      <div class="progress-meta"><span>Overall completion</span><span id="cc-overall-2">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="cc-progress-fill" style="width:0%">0%</div></div>
+      <div id="cc-setup-steps"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Task Check</div>
+      <div class="tabs tasks-tabs">
+        <button class="tab active" data-tab="tasks">Tasks</button>
+        <button class="tab" data-tab="incidents">Incidents</button>
+        <button class="tab" data-tab="training">Training</button>
+      </div>
+      <ul class="task-list" id="cc-tasks-list"></ul>
+      <ul class="task-list" id="cc-incidents-list" hidden></ul>
+      <ul class="task-list" id="cc-training-list" hidden></ul>
+    </div>
+  </div>
+
+  <!-- RIGHT: orchestrator chat + communication thread -->
+  <div class="cmd-col">
+    <div class="card chat-card cmd-chat">
+      <h3>Orchestrator</h3>
+      <p style="margin:-4px 0 12px;color:var(--on-dark-soft);font-size:13px;">
+        Ask anything — the orchestrator routes your request to the right specialist agent.
+      </p>
+      <div class="chat-window" id="cc-chat-window"></div>
+      <div class="suggest-row" id="cc-suggest"></div>
+      <form id="cc-chat-form">
+        <input id="cc-chat-input" placeholder="e.g. What's my setup progress? Who's my manager?" autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Communication — single thread</div>
+      <div class="comm-thread" id="cc-comm-thread"></div>
+    </div>
+  </div>
+
+  <!-- FULL WIDTH: organization chart -->
+  <div class="card org-card">
+    <div class="section-label">Organization Chart</div>
+    <p style="margin:-4px 0 6px;color:var(--muted);font-size:13px;">Click any teammate to message them on Teams or send an email.</p>
+    <div class="org-scroll"><div class="tree" id="cc-orgtree"></div></div>
+  </div>
+</main>
+
+<div id="cc-contact-popup" class="contact-popup" hidden></div>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script src="command.js"></script>
+</body>
+</html>

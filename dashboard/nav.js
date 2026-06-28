@@ -1,6 +1,7 @@
 // Shared top navigation, injected into every page based on <body data-page="...">.
 
 const NAV_LINKS = [
+  { id: "command", label: "Command Center", href: "command.html" },
   { id: "overview", label: "Overview", href: "index.html" },
   { id: "profile", label: "Profile Agent", href: "profile.html" },
   { id: "setup", label: "Setup Agent", href: "setup.html" },
