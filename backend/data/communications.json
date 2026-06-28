@@ -37,9 +37,9 @@
       "channel": "Email",
       "subject": "Milestone: Day 1 IT setup 60% complete",
       "recipient": "aisha.rahman@techventure.com.my",
-      "status": "Sent",
+      "status": "Retrying",
       "time": "2026-06-29 14:30",
-      "retryCount": 2
+      "retryCount": 1
     },
     {
       "id": "c6",
