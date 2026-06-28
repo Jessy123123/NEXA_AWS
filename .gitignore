@@ -5,3 +5,7 @@
 .env.local
 *.pem
 credentials
+
+venv/
+__pycache__/
+*.pyc
