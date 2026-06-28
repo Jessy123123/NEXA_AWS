@@ -1,0 +1,26 @@
+[
+  {
+    "employeeId": "EMP-A104",
+    "name": "Aisha Rahman",
+    "title": "Software Engineer, Platform Team",
+    "department": "Engineering",
+    "managerId": "EMP-S201",
+    "managerName": "Sarah Tan",
+    "siteLocation": "Kuala Lumpur",
+    "startDate": "2026-06-29",
+    "email": "aisha.rahman@techventure.com.my",
+    "teams": "aisha.rahman"
+  },
+  {
+    "employeeId": "EMP-W205",
+    "name": "Wong Mei Yi",
+    "title": "Finance Analyst",
+    "department": "Finance",
+    "managerId": "EMP-N301",
+    "managerName": "Nurul Huda",
+    "siteLocation": "Kuala Lumpur",
+    "startDate": "2026-06-29",
+    "email": "wong.meiyi@techventure.com.my",
+    "teams": "wong.meiyi"
+  }
+]

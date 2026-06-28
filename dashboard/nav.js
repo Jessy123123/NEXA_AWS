@@ -1,4 +1,5 @@
 // Shared top navigation, injected into every page based on <body data-page="...">.
+// Also shows who's currently "logged in" (employee ID from session.js) and a way to switch.
 
 const NAV_LINKS = [
   { id: "overview", label: "Overview", href: "index.html" },
@@ -19,4 +20,27 @@ function renderNav() {
   document.querySelector(".topbar").appendChild(nav);
 }
 
-document.addEventListener("DOMContentLoaded", renderNav);
+async function renderSessionChip() {
+  const employeeId = getEmployeeId();
+  if (!employeeId) return;
+  const chip = document.createElement("div");
+  chip.className = "session-chip";
+  chip.textContent = employeeId;
+  document.querySelector(".topbar").appendChild(chip);
+  try {
+    const employee = await api(`/employees/${employeeId}`);
+    chip.innerHTML = `${employee.name} <span class="session-dept">${employee.department}</span> <a href="#" id="switch-employee">Switch</a>`;
+    document.getElementById("switch-employee").addEventListener("click", (e) => {
+      e.preventDefault();
+      clearEmployeeId();
+      window.location.href = "index.html";
+    });
+  } catch (err) {
+    chip.textContent = employeeId + " (unverified)";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderNav();
+  renderSessionChip();
+});

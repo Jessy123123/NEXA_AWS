@@ -15,13 +15,43 @@
 </header>
 <div class="error-banner" id="backend-error" hidden></div>
 
-<section class="page-header">
-  <h2>Welcome back, Aisha</h2>
-  <p>A live snapshot from each of the 5 agents below. Click any card to open that agent's page and act on it.</p>
+<!-- Shown until an Employee ID is confirmed against the backend -->
+<section class="id-gate" id="id-gate">
+  <h2>Welcome to AWS-IQ</h2>
+  <p>Enter your Employee ID to start onboarding. The system looks you up, finds your department and role, and personalizes every agent below for you.</p>
+  <form id="id-gate-form">
+    <input id="id-gate-input" type="text" placeholder="e.g. EMP-A104" autocomplete="off" />
+    <button type="submit">Continue</button>
+  </form>
+  <div class="gate-error" id="id-gate-error" hidden></div>
+  <div class="hint" id="id-gate-hint">Loading sample IDs…</div>
 </section>
 
-<main class="summary-grid" id="overview-grid"></main>
+<!-- Shown once an Employee ID is confirmed -->
+<div id="app-content" hidden>
+  <section class="page-header">
+    <h2 id="welcome-heading">Welcome back</h2>
+    <p>Ask the Orchestrator Agent anything below, or open a specific agent page from the nav for full detail and controls.</p>
+  </section>
 
+  <main class="grid">
+    <section class="card chat-card orchestrator-card" aria-label="Orchestrator agent chat">
+      <h3>Orchestrator Agent</h3>
+      <p style="color:var(--on-dark-soft); font-size:13px; margin-top:-8px;">
+        Combines all 5 agents. Ask questions ("who is my manager", "what's the meal allowance in Singapore") or give instructions ("advance my setup", "mark the MFA task as done", "resend that failed email").
+      </p>
+      <div class="chat-window" id="orchestrator-window"></div>
+      <form id="orchestrator-form">
+        <input id="orchestrator-input" type="text" placeholder="Ask or instruct the Orchestrator Agent..." autocomplete="off" />
+        <button type="submit">Send</button>
+      </form>
+    </section>
+  </main>
+
+  <main class="summary-grid" id="overview-grid"></main>
+</div>
+
+<script src="session.js"></script>
 <script src="nav.js"></script>
 <script src="app.js"></script>
 </body>

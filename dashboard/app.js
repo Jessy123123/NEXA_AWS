@@ -1,16 +1,5 @@
-// All data now comes from the FastAPI backend (see backend/main.py) — no more
-// hardcoded mock arrays. Each render function fetches its own agent endpoint.
-
-const API_BASE = "http://localhost:8000/api";
-
-async function api(path, options = {}) {
-  const res = await fetch(API_BASE + path, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  if (!res.ok) throw new Error(`${path} → ${res.status}`);
-  return res.json();
-}
+// All data comes from the FastAPI backend (see backend/main.py). session.js
+// supplies API_BASE/api()/getEmployeeId() — loaded before this file on every page.
 
 function showBackendError(message) {
   const banner = document.getElementById("backend-error");
@@ -19,21 +8,122 @@ function showBackendError(message) {
   banner.hidden = false;
 }
 
+// --- Index page: Employee ID gate ---------------------------------------------
+
+async function setupIdGate() {
+  const gate = document.getElementById("id-gate");
+  if (!gate) return; // not on index.html
+
+  const appContent = document.getElementById("app-content");
+  const input = document.getElementById("id-gate-input");
+  const errorEl = document.getElementById("id-gate-error");
+  const hintEl = document.getElementById("id-gate-hint");
+
+  try {
+    const employees = await api("/employees");
+    hintEl.innerHTML =
+      "Try: " +
+      employees
+        .map((e) => `<button type="button" class="try-id" data-id="${e.employeeId}">${e.employeeId} (${e.name}, ${e.department})</button>`)
+        .join(" · ");
+    gate.querySelectorAll(".try-id").forEach((btn) =>
+      btn.addEventListener("click", () => {
+        input.value = btn.dataset.id;
+        document.getElementById("id-gate-form").requestSubmit();
+      })
+    );
+  } catch (err) {
+    hintEl.textContent = "Couldn't load sample IDs — is the backend running on :8000?";
+  }
+
+  async function unlock(employeeId) {
+    errorEl.hidden = true;
+    try {
+      const employee = await api(`/employees/${employeeId}`);
+      setEmployeeId(employee.employeeId);
+      gate.hidden = true;
+      appContent.hidden = false;
+      document.getElementById("welcome-heading").textContent = `Welcome back, ${employee.name.split(" ")[0]}`;
+      renderOrchestratorGreeting(employee);
+      initAppContent();
+    } catch (err) {
+      errorEl.textContent = `Couldn't find an employee with ID '${employeeId}'. Try one of the sample IDs below.`;
+      errorEl.hidden = false;
+    }
+  }
+
+  document.getElementById("id-gate-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const id = input.value.trim();
+    if (id) unlock(id);
+  });
+
+  // Already logged in from a previous visit — skip the gate.
+  const existing = getEmployeeId();
+  if (existing) unlock(existing);
+}
+
+// --- Orchestrator Agent chat (index.html only) ---------------------------------
+
+function appendOrchestratorMessage(role, html) {
+  const win = document.getElementById("orchestrator-window");
+  if (!win) return;
+  const div = document.createElement("div");
+  div.className = "msg " + role;
+  div.innerHTML = html;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+}
+
+function renderOrchestratorGreeting(employee) {
+  appendOrchestratorMessage(
+    "bot",
+    `Hi ${employee.name.split(" ")[0]}! I can see you're in <strong>${employee.department}</strong> reporting to <strong>${employee.managerName}</strong>. Ask me anything, or tell me to take action — e.g. "advance my setup" or "mark the MFA task as done".`
+  );
+}
+
+function setupOrchestratorChat() {
+  const form = document.getElementById("orchestrator-form");
+  if (!form) return;
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const input = document.getElementById("orchestrator-input");
+    const message = input.value.trim();
+    if (!message) return;
+    appendOrchestratorMessage("user", message);
+    input.value = "";
+
+    try {
+      const result = await api("/orchestrator/chat", {
+        method: "POST",
+        body: JSON.stringify({ employee_id: getEmployeeId(), message }),
+      });
+      const tag = result.action_taken
+        ? `<span class="agent-tag action-tag">${result.agent} — action taken</span><br/>`
+        : `<span class="agent-tag">${result.agent}</span><br/>`;
+      appendOrchestratorMessage("bot", tag + result.reply.replace(/\n/g, "<br/>"));
+      if (result.action_taken) renderOverview(); // refresh summary cards after a mutation
+    } catch (err) {
+      appendOrchestratorMessage("bot", "Couldn't reach the Orchestrator Agent — is the backend running on :8000?");
+    }
+  });
+}
+
 // --- Profile Agent -----------------------------------------------------------
 
 async function renderProfile() {
   const nameEl = document.getElementById("emp-name");
   if (!nameEl) return;
-  const employee = await api("/profile");
+  const employee = await api(`/profile/${getEmployeeId()}`);
   nameEl.textContent = employee.name;
   document.getElementById("emp-title").textContent = employee.title;
-  document.getElementById("emp-meta").textContent = employee.meta;
+  document.getElementById("emp-meta").textContent = `${employee.siteLocation} · Started ${employee.startDate} · Manager: ${employee.managerName}`;
 }
 
 async function renderOrgChart() {
   const root = document.getElementById("orgchart");
   if (!root) return;
-  const people = await api("/orgchart");
+  const people = await api(`/orgchart/${getEmployeeId()}`);
   root.innerHTML = "";
   people.forEach((person) => {
     const node = document.createElement("div");
@@ -78,9 +168,9 @@ function renderTaskItem(item, listId, { onToggle } = {}) {
       const done = e.target.checked;
       li.classList.toggle("completed", done);
       try {
-        await api(`/tasks/${item.id}`, { method: "PATCH", body: JSON.stringify({ done }) });
+        await api(`/tasks/${getEmployeeId()}/${item.id}`, { method: "PATCH", body: JSON.stringify({ done }) });
       } catch (err) {
-        e.target.checked = !done; // revert on failure
+        e.target.checked = !done;
         li.classList.toggle("completed", !done);
         showBackendError("Couldn't save task update — is the backend running on :8000?");
       }
@@ -91,10 +181,11 @@ function renderTaskItem(item, listId, { onToggle } = {}) {
 
 async function renderTasksPanel() {
   if (!document.getElementById("tasks-list")) return;
+  const employeeId = getEmployeeId();
   const [tasks, incidents, training] = await Promise.all([
-    api("/tasks"),
-    api("/incidents"),
-    api("/training"),
+    api(`/tasks/${employeeId}`),
+    api(`/incidents/${employeeId}`),
+    api(`/training/${employeeId}`),
   ]);
   document.getElementById("tasks-list").innerHTML = "";
   document.getElementById("incidents-list").innerHTML = "";
@@ -118,7 +209,7 @@ function setupTabs() {
   });
 }
 
-// --- Knowledge Agent ---------------------------------------------------------
+// --- Knowledge Agent (per-page RAG chat — global, no employee context needed) --
 
 function appendChatMessage(role, html) {
   const win = document.getElementById("chat-window");
@@ -146,9 +237,7 @@ function setupChat() {
         method: "POST",
         body: JSON.stringify({ question }),
       });
-      const citationHtml = result.citations
-        .map((c) => `Source: ${c.title} (${c.category})`)
-        .join("<br/>");
+      const citationHtml = result.citations.map((c) => `Source: ${c.title} (${c.category})`).join("<br/>");
       const modeNote =
         result.mode === "fallback"
           ? `<span class="citation" style="opacity:.7">[local extract — Bedrock KB not connected]</span>`
@@ -247,7 +336,7 @@ function renderSetupStepsFromData(steps) {
 async function renderSetupSteps() {
   const root = document.getElementById("setup-steps");
   if (!root) return;
-  renderSetupStepsFromData(await api("/setup/steps"));
+  renderSetupStepsFromData(await api(`/setup/${getEmployeeId()}/steps`));
 }
 
 function setupAdvanceButton() {
@@ -256,7 +345,7 @@ function setupAdvanceButton() {
   btn.addEventListener("click", async () => {
     btn.disabled = true;
     try {
-      renderSetupStepsFromData(await api("/setup/advance", { method: "POST" }));
+      renderSetupStepsFromData(await api(`/setup/${getEmployeeId()}/advance`, { method: "POST" }));
     } catch (err) {
       showBackendError("Couldn't advance setup — is the backend running on :8000?");
     }
@@ -268,7 +357,8 @@ function setupAdvanceButton() {
 async function renderCommunications() {
   const list = document.getElementById("comm-list");
   if (!list) return;
-  const comms = await api("/communications");
+  const employeeId = getEmployeeId();
+  const comms = await api(`/communications/${employeeId}`);
   list.innerHTML = "";
   comms.forEach((c) => {
     const li = document.createElement("li");
@@ -284,7 +374,7 @@ async function renderCommunications() {
     btn.addEventListener("click", async () => {
       btn.disabled = true;
       try {
-        await api(`/communications/${btn.dataset.id}/retry`, { method: "POST" });
+        await api(`/communications/${employeeId}/${btn.dataset.id}/retry`, { method: "POST" });
         renderCommunications();
       } catch (err) {
         showBackendError("Retry failed — is the backend running on :8000?");
@@ -299,7 +389,7 @@ async function renderCommunications() {
 async function renderOverview() {
   const root = document.getElementById("overview-grid");
   if (!root) return;
-  const o = await api("/overview");
+  const o = await api(`/overview/${getEmployeeId()}`);
   const cards = [
     { label: "Profile Agent", href: "profile.html", h: o.employee.name, p: o.employee.title },
     { label: "Setup Agent", href: "setup.html", h: o.setup.donePct + "% complete", p: `${o.setup.done}/${o.setup.total} provisioning steps done` },
@@ -319,16 +409,29 @@ async function renderOverview() {
     .join("");
 }
 
+// --- Page bootstrapping ---------------------------------------------------------
+
+function initAppContent() {
+  // Called once an employee ID is confirmed (on index.html), or immediately on
+  // every other page (where requireEmployeeOrRedirect already gated access).
+  setupOrchestratorChat();
+  const tasks = [renderOverview()];
+  Promise.allSettled(tasks).then((results) => {
+    if (results.some((r) => r.status === "rejected")) {
+      showBackendError("Couldn't reach the backend at " + API_BASE + " — run `uvicorn backend.main:app --reload` from the repo root.");
+    }
+  });
+}
+
 document.addEventListener("DOMContentLoaded", () => {
-  const tasks = [
-    renderProfile(),
-    renderOrgChart(),
-    renderTasksPanel(),
-    renderFaq(),
-    renderSetupSteps(),
-    renderCommunications(),
-    renderOverview(),
-  ];
+  if (document.getElementById("id-gate")) {
+    setupIdGate(); // index.html handles its own gating + bootstraps initAppContent itself
+    return;
+  }
+
+  if (!requireEmployeeOrRedirect()) return;
+
+  const tasks = [renderProfile(), renderOrgChart(), renderTasksPanel(), renderFaq(), renderSetupSteps(), renderCommunications()];
   setupTabs();
   setupChat();
   setupFaqSearch();

@@ -406,3 +406,67 @@ button:hover { background: var(--primary-active); }
 
 .advance-btn-row { margin-bottom: 16px; }
 .advance-btn-row p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+
+.session-chip {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.session-dept {
+  background: var(--surface-card);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+.session-chip a { color: var(--primary); text-decoration: none; font-weight: 500; }
+.session-chip a:hover { text-decoration: underline; }
+
+.id-gate {
+  max-width: 480px;
+  margin: 48px auto;
+  padding: 32px;
+  background: var(--surface-card);
+  border-radius: 12px;
+  text-align: center;
+}
+.id-gate h2 { margin: 0 0 8px; }
+.id-gate p { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+.id-gate form { display: flex; gap: 8px; }
+.id-gate input { flex: 1; }
+.id-gate .hint {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.id-gate .hint button {
+  background: transparent;
+  color: var(--primary);
+  padding: 0;
+  height: auto;
+  font-size: 12px;
+  text-decoration: underline;
+}
+.id-gate .gate-error { color: var(--error); font-size: 13px; margin-top: 10px; }
+
+.orchestrator-card {
+  grid-column: span 3;
+  background: var(--surface-dark);
+  color: var(--on-dark);
+}
+.orchestrator-card h3 { color: var(--on-dark); }
+.orchestrator-card .agent-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--surface-dark);
+  background: var(--accent-teal);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-bottom: 4px;
+}
+.orchestrator-card .action-tag { background: var(--primary); color: var(--on-primary); }
+@media (max-width: 1000px) { .orchestrator-card { grid-column: span 1; } }

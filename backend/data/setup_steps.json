@@ -1,7 +1,16 @@
-[
-  { "id": "vpn", "name": "VPN Access", "system": "Cisco AnyConnect", "status": "done", "detail": "Account created T-2 days. Full access activates after MFA setup." },
-  { "id": "email", "name": "Email Account", "system": "Microsoft 365 / Azure AD", "status": "done", "detail": "Provisioned T-3 days, accessible from Day 1." },
-  { "id": "sharepoint", "name": "SharePoint Access", "system": "Microsoft 365", "status": "done", "detail": "Linked to Platform Team site, Day 1 access confirmed." },
-  { "id": "okta", "name": "Workday / Okta SSO", "status": "active", "system": "Okta", "detail": "SSO account created T-3 days; enrollment confirmation pending from IT Operations." },
-  { "id": "software", "name": "Software Installation", "system": "SCCM / Intune", "status": "pending", "detail": "IDE, Docker, and engineering toolchain queued for push." }
-]
+{
+  "EMP-A104": [
+    { "id": "vpn", "name": "VPN Access", "system": "Cisco AnyConnect", "status": "done", "detail": "Account created T-2 days. Full access activates after MFA setup." },
+    { "id": "email", "name": "Email Account", "system": "Microsoft 365 / Azure AD", "status": "done", "detail": "Provisioned T-3 days, accessible from Day 1." },
+    { "id": "sharepoint", "name": "SharePoint Access", "system": "Microsoft 365", "status": "done", "detail": "Linked to Platform Team site, Day 1 access confirmed." },
+    { "id": "okta", "name": "Workday / Okta SSO", "system": "Okta", "status": "active", "detail": "SSO account created T-3 days; enrollment confirmation pending from IT Operations." },
+    { "id": "role-access", "name": "Engineering Access", "system": "GitHub, AWS Console (dev), Jira, Confluence, IDE licenses", "status": "pending", "detail": "Role-specific access — requires Engineering Lead approval (Employee-Onboarding-Checklist.md §2.3)." }
+  ],
+  "EMP-W205": [
+    { "id": "vpn", "name": "VPN Access", "system": "Cisco AnyConnect", "status": "done", "detail": "Account created T-2 days. Full access activates after MFA setup." },
+    { "id": "email", "name": "Email Account", "system": "Microsoft 365 / Azure AD", "status": "done", "detail": "Provisioned T-3 days, accessible from Day 1." },
+    { "id": "sharepoint", "name": "SharePoint Access", "system": "Microsoft 365", "status": "done", "detail": "Linked to Finance team site, Day 1 access confirmed." },
+    { "id": "okta", "name": "Workday / Okta SSO", "system": "Okta", "status": "active", "detail": "SSO account created T-3 days; enrollment confirmation pending from IT Operations." },
+    { "id": "role-access", "name": "Finance Access", "system": "SAP access, Banking portals (view-only initially)", "status": "pending", "detail": "Role-specific access — requires CFO approval (Employee-Onboarding-Checklist.md §2.3)." }
+  ]
+}

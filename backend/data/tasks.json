@@ -1,8 +1,18 @@
-[
-  { "id": "t1", "label": "Return signed employment contract to HR", "priority": "High", "done": true },
-  { "id": "t2", "label": "Configure MFA (YubiKey + authenticator app)", "priority": "High", "done": false },
-  { "id": "t3", "label": "Test VPN connectivity (Cisco AnyConnect)", "priority": "High", "done": false },
-  { "id": "t4", "label": "Complete Security Awareness Module 1 (LMS)", "priority": "Medium", "done": false },
-  { "id": "t5", "label": "Dev environment setup — IDE, local DB, Docker", "priority": "Medium", "done": false },
-  { "id": "t6", "label": "Initiate benefits enrollment (deadline: Day 14)", "priority": "Low", "done": false }
-]
+{
+  "EMP-A104": [
+    { "id": "t1", "label": "Return signed employment contract to HR", "priority": "High", "done": true },
+    { "id": "t2", "label": "Configure MFA (YubiKey + authenticator app)", "priority": "High", "done": false },
+    { "id": "t3", "label": "Test VPN connectivity (Cisco AnyConnect)", "priority": "High", "done": false },
+    { "id": "t4", "label": "Complete Security Awareness Module 1 (LMS)", "priority": "Medium", "done": false },
+    { "id": "t5", "label": "Dev environment setup — IDE, local DB, Docker", "priority": "Medium", "done": false },
+    { "id": "t6", "label": "Initiate benefits enrollment (deadline: Day 14)", "priority": "Low", "done": false }
+  ],
+  "EMP-W205": [
+    { "id": "t1", "label": "Return signed employment contract to HR", "priority": "High", "done": true },
+    { "id": "t2", "label": "Configure MFA (YubiKey + authenticator app)", "priority": "High", "done": false },
+    { "id": "t3", "label": "Test VPN connectivity (Cisco AnyConnect)", "priority": "High", "done": false },
+    { "id": "t4", "label": "Complete Security Awareness Module 1 (LMS)", "priority": "Medium", "done": false },
+    { "id": "t5", "label": "SAP access request submitted for CFO approval", "priority": "Medium", "done": false },
+    { "id": "t6", "label": "Initiate benefits enrollment (deadline: Day 14)", "priority": "Low", "done": false }
+  ]
+}
