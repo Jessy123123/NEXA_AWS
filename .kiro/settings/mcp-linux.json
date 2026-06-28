@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "folder-watcher": {
+      "command": ".venv/bin/python",
+      "args": ["mcp-servers/folder_watcher.py"],
+      "env": {
+        "WATCH_FOLDER": "./data-source/inbox"
+      }
+    }
+  }
+}
