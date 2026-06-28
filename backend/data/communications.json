@@ -1,0 +1,8 @@
+[
+  { "id": "c1", "channel": "Email", "subject": "Welcome to TechVenture, Aisha!", "recipient": "aisha.rahman@techventure.com.my", "status": "Sent", "time": "2026-06-29 08:02" },
+  { "id": "c2", "channel": "Email", "subject": "New hire starting today — Aisha Rahman", "recipient": "sarah.tan@techventure.com.my (Manager)", "status": "Sent", "time": "2026-06-29 08:02" },
+  { "id": "c3", "channel": "Teams", "subject": "Onboarding started for Aisha Rahman", "recipient": "#platform-team", "status": "Sent", "time": "2026-06-29 08:03" },
+  { "id": "c4", "channel": "Calendar", "subject": "Manager briefing: Aisha Rahman 30-day goals", "recipient": "sarah.tan@techventure.com.my", "status": "Sent", "time": "2026-06-29 08:05" },
+  { "id": "c5", "channel": "Email", "subject": "Milestone: Day 1 IT setup 60% complete", "recipient": "aisha.rahman@techventure.com.my", "status": "Retrying", "time": "2026-06-29 14:30", "retryCount": 1 },
+  { "id": "c6", "channel": "Teams", "subject": "Benefits enrollment reminder (due Day 14)", "recipient": "aisha.rahman@techventure.com.my", "status": "Sent", "time": "2026-06-29 09:00" }
+]

@@ -1,0 +1,6 @@
+[
+  { "id": "tr1", "label": "Data Classification Guidelines (45 min, due Day 2)", "priority": "High" },
+  { "id": "tr2", "label": "PDPA & Data Privacy Basics (60 min, due Day 5)", "priority": "High" },
+  { "id": "tr3", "label": "Anti-Bribery & Corruption / MACC Act (30 min, due Day 5)", "priority": "Medium" },
+  { "id": "tr4", "label": "Code of Conduct & Ethics (45 min, due Day 5)", "priority": "Medium" }
+]

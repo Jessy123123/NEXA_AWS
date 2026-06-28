@@ -375,3 +375,34 @@ button:hover { background: var(--primary-active); }
 .step-detail .step-meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .step-detail.done { border-color: var(--success); }
 .step-detail.active { border-color: var(--primary); }
+
+.agent-badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--primary);
+  background: var(--surface-card);
+  padding: 4px 12px;
+  border-radius: 9999px;
+}
+
+.error-banner {
+  background: #f4dcd6;
+  color: var(--error);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.retry-btn {
+  height: auto;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.advance-btn-row { margin-bottom: 16px; }
+.advance-btn-row p { margin: 8px 0 0; color: var(--muted); font-size: 12px; }

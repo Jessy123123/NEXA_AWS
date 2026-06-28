@@ -13,10 +13,12 @@
   <h1>AWS-IQ</h1>
   <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
 </header>
+<div class="error-banner" id="backend-error" hidden></div>
 
 <section class="page-header">
   <h2>Profile Agent</h2>
   <p>Employee profile, role context, and organizational chart with one-click contact.</p>
+  <span class="agent-badge">Data source: DynamoDB Employees + OrgChart tables (currently mocked via FastAPI)</span>
 </section>
 
 <main class="grid">
@@ -39,7 +41,6 @@
 
 </main>
 
-<script src="data.js"></script>
 <script src="nav.js"></script>
 <script src="app.js"></script>
 </body>

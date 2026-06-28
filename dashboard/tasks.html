@@ -13,10 +13,12 @@
   <h1>AWS-IQ</h1>
   <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
 </header>
+<div class="error-banner" id="backend-error" hidden></div>
 
 <section class="page-header">
   <h2>Daily Task Agent</h2>
   <p>Today's onboarding tasks, open incidents, and required training assignments.</p>
+  <span class="agent-badge">Data source: DynamoDB Tasks/Incidents tables (currently mocked via FastAPI) — checking a task writes it back</span>
 </section>
 
 <main class="grid">
@@ -32,7 +34,6 @@
   </section>
 </main>
 
-<script src="data.js"></script>
 <script src="nav.js"></script>
 <script src="app.js"></script>
 </body>

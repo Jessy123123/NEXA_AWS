@@ -2,6 +2,10 @@
 boto3==1.38.0
 botocore==1.38.0
 
+# Backend API
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+
 # Testing
 pytest==8.3.5
 pytest-cov==6.1.0

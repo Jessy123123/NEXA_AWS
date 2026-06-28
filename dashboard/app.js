@@ -1,18 +1,41 @@
-// Prototype wiring — no backend calls, all mock data from data.js.
+// All data now comes from the FastAPI backend (see backend/main.py) — no more
+// hardcoded mock arrays. Each render function fetches its own agent endpoint.
 
-function renderProfile() {
-  const name = document.getElementById("emp-name");
-  if (!name) return;
-  name.textContent = EMPLOYEE.name;
-  document.getElementById("emp-title").textContent = EMPLOYEE.title;
-  document.getElementById("emp-meta").textContent = EMPLOYEE.meta;
+const API_BASE = "http://localhost:8000/api";
+
+async function api(path, options = {}) {
+  const res = await fetch(API_BASE + path, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
+  if (!res.ok) throw new Error(`${path} → ${res.status}`);
+  return res.json();
 }
 
-function renderOrgChart() {
+function showBackendError(message) {
+  const banner = document.getElementById("backend-error");
+  if (!banner) return;
+  banner.textContent = message;
+  banner.hidden = false;
+}
+
+// --- Profile Agent -----------------------------------------------------------
+
+async function renderProfile() {
+  const nameEl = document.getElementById("emp-name");
+  if (!nameEl) return;
+  const employee = await api("/profile");
+  nameEl.textContent = employee.name;
+  document.getElementById("emp-title").textContent = employee.title;
+  document.getElementById("emp-meta").textContent = employee.meta;
+}
+
+async function renderOrgChart() {
   const root = document.getElementById("orgchart");
   if (!root) return;
+  const people = await api("/orgchart");
   root.innerHTML = "";
-  ORG_CHART.forEach((person) => {
+  people.forEach((person) => {
     const node = document.createElement("div");
     node.className = "org-node" + (person.me ? " me" : "");
     node.innerHTML = `<strong>${person.name}</strong><div class="role">${person.role}</div>`;
@@ -38,7 +61,9 @@ function showContactPopup(person, evt) {
   document.getElementById("popup-close").addEventListener("click", () => (popup.hidden = true));
 }
 
-function renderTaskItem(item, listId, onToggle) {
+// --- Daily Task Agent ---------------------------------------------------------
+
+function renderTaskItem(item, listId, { onToggle } = {}) {
   const list = document.getElementById(listId);
   if (!list) return;
   const li = document.createElement("li");
@@ -49,19 +74,34 @@ function renderTaskItem(item, listId, onToggle) {
     <span class="badge ${item.priority}">${item.priority}</span>
   `;
   if (onToggle) {
-    li.querySelector("input").addEventListener("change", (e) => {
-      item.done = e.target.checked;
-      li.classList.toggle("completed", item.done);
+    li.querySelector("input").addEventListener("change", async (e) => {
+      const done = e.target.checked;
+      li.classList.toggle("completed", done);
+      try {
+        await api(`/tasks/${item.id}`, { method: "PATCH", body: JSON.stringify({ done }) });
+      } catch (err) {
+        e.target.checked = !done; // revert on failure
+        li.classList.toggle("completed", !done);
+        showBackendError("Couldn't save task update — is the backend running on :8000?");
+      }
     });
   }
   list.appendChild(li);
 }
 
-function renderTasksPanel() {
+async function renderTasksPanel() {
   if (!document.getElementById("tasks-list")) return;
-  TASKS.forEach((t) => renderTaskItem(t, "tasks-list", true));
-  INCIDENTS.forEach((i) => renderTaskItem(i, "incidents-list", false));
-  TRAINING.forEach((t) => renderTaskItem(t, "training-list", false));
+  const [tasks, incidents, training] = await Promise.all([
+    api("/tasks"),
+    api("/incidents"),
+    api("/training"),
+  ]);
+  document.getElementById("tasks-list").innerHTML = "";
+  document.getElementById("incidents-list").innerHTML = "";
+  document.getElementById("training-list").innerHTML = "";
+  tasks.forEach((t) => renderTaskItem(t, "tasks-list", { onToggle: true }));
+  incidents.forEach((i) => renderTaskItem(i, "incidents-list", {}));
+  training.forEach((t) => renderTaskItem(t, "training-list", {}));
 }
 
 function setupTabs() {
@@ -78,10 +118,7 @@ function setupTabs() {
   });
 }
 
-function findKbAnswer(question) {
-  const q = question.toLowerCase();
-  return KB_ANSWERS.find((entry) => entry.keywords.some((kw) => q.includes(kw)));
-}
+// --- Knowledge Agent ---------------------------------------------------------
 
 function appendChatMessage(role, html) {
   const win = document.getElementById("chat-window");
@@ -96,7 +133,7 @@ function appendChatMessage(role, html) {
 function setupChat() {
   const form = document.getElementById("chat-form");
   if (!form) return;
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = document.getElementById("chat-input");
     const question = input.value.trim();
@@ -104,37 +141,36 @@ function setupChat() {
     appendChatMessage("user", question);
     input.value = "";
 
-    setTimeout(() => {
-      const hit = findKbAnswer(question);
-      if (hit) {
-        appendChatMessage(
-          "bot",
-          `${hit.answer}<span class="citation">Source: ${hit.source.title} (${hit.source.category})</span>`
-        );
-      } else {
-        appendChatMessage(
-          "bot",
-          `I couldn't find a confident answer in the knowledge base for that — try rephrasing, or check the FAQ section below.`
-        );
-      }
-    }, 500);
+    try {
+      const result = await api("/knowledge/query", {
+        method: "POST",
+        body: JSON.stringify({ question }),
+      });
+      const citationHtml = result.citations
+        .map((c) => `Source: ${c.title} (${c.category})`)
+        .join("<br/>");
+      const modeNote =
+        result.mode === "fallback"
+          ? `<span class="citation" style="opacity:.7">[local extract — Bedrock KB not connected]</span>`
+          : "";
+      appendChatMessage("bot", `${result.answer}<span class="citation">${citationHtml}</span>${modeNote}`);
+    } catch (err) {
+      appendChatMessage("bot", "Couldn't reach the Knowledge Agent backend — is it running on :8000?");
+    }
   });
 }
 
-function renderFaq(filter = "") {
+async function renderFaq(category = "All") {
   const list = document.getElementById("faq-list");
   if (!list) return;
+  const faqs = await api(`/faq?category=${encodeURIComponent(category)}`);
   list.innerHTML = "";
-  FAQS.filter(
-    (f) =>
-      f.q.toLowerCase().includes(filter.toLowerCase()) ||
-      f.category.toLowerCase().includes(filter.toLowerCase())
-  ).forEach((f) => {
+  faqs.forEach((f) => {
     const item = document.createElement("div");
     item.className = "faq-item";
     item.innerHTML = `
       <div class="faq-q"><span><span class="faq-cat">${f.category}</span>${f.q}</span><span>+</span></div>
-      <div class="faq-a">${f.a}</div>
+      <div class="faq-a">${f.a}<br/><span style="font-size:11px;opacity:.7">Source: ${f.source}</span></div>
     `;
     item.querySelector(".faq-q").addEventListener("click", () => item.classList.toggle("open"));
     list.appendChild(item);
@@ -144,13 +180,33 @@ function renderFaq(filter = "") {
 function setupFaqSearch() {
   const search = document.getElementById("faq-search");
   if (!search) return;
-  search.addEventListener("input", (e) => renderFaq(e.target.value));
+  let allFaqs = [];
+  api("/faq").then((data) => (allFaqs = data));
+  search.addEventListener("input", (e) => {
+    const term = e.target.value.toLowerCase();
+    const list = document.getElementById("faq-list");
+    const filtered = allFaqs.filter(
+      (f) => f.q.toLowerCase().includes(term) || f.category.toLowerCase().includes(term)
+    );
+    list.innerHTML = "";
+    filtered.forEach((f) => {
+      const item = document.createElement("div");
+      item.className = "faq-item";
+      item.innerHTML = `
+        <div class="faq-q"><span><span class="faq-cat">${f.category}</span>${f.q}</span><span>+</span></div>
+        <div class="faq-a">${f.a}<br/><span style="font-size:11px;opacity:.7">Source: ${f.source}</span></div>
+      `;
+      item.querySelector(".faq-q").addEventListener("click", () => item.classList.toggle("open"));
+      list.appendChild(item);
+    });
+  });
 }
 
-function setupFaqCategoryChips() {
+async function setupFaqCategoryChips() {
   const row = document.getElementById("faq-categories");
   if (!row) return;
-  const categories = ["All", ...new Set(FAQS.map((f) => f.category))];
+  const faqs = await api("/faq");
+  const categories = ["All", ...new Set(faqs.map((f) => f.category))];
   row.innerHTML = categories
     .map((c, i) => `<button class="chip ${i === 0 ? "active" : ""}" data-cat="${c}">${c}</button>`)
     .join("");
@@ -158,23 +214,24 @@ function setupFaqCategoryChips() {
     chip.addEventListener("click", () => {
       row.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
       chip.classList.add("active");
-      renderFaq(chip.dataset.cat === "All" ? "" : chip.dataset.cat);
+      renderFaq(chip.dataset.cat);
     });
   });
 }
 
-function renderSetupSteps() {
+// --- Setup Agent --------------------------------------------------------------
+
+function renderSetupStepsFromData(steps) {
   const root = document.getElementById("setup-steps");
-  if (!root) return;
-  root.innerHTML = "";
-  const doneCount = SETUP_STEPS.filter((s) => s.status === "done").length;
-  const pct = Math.round((doneCount / SETUP_STEPS.length) * 100);
+  const doneCount = steps.filter((s) => s.status === "done").length;
+  const pct = Math.round((doneCount / steps.length) * 100);
   const fill = document.getElementById("progress-fill");
   if (fill) {
     fill.style.width = pct + "%";
     fill.textContent = pct + "%";
   }
-  SETUP_STEPS.forEach((step) => {
+  root.innerHTML = "";
+  steps.forEach((step) => {
     const div = document.createElement("div");
     div.className = "step-detail " + step.status;
     div.innerHTML = `
@@ -183,35 +240,72 @@ function renderSetupSteps() {
     `;
     root.appendChild(div);
   });
+  const btn = document.getElementById("advance-step-btn");
+  if (btn) btn.disabled = doneCount === steps.length;
 }
 
-function renderCommunications() {
+async function renderSetupSteps() {
+  const root = document.getElementById("setup-steps");
+  if (!root) return;
+  renderSetupStepsFromData(await api("/setup/steps"));
+}
+
+function setupAdvanceButton() {
+  const btn = document.getElementById("advance-step-btn");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    try {
+      renderSetupStepsFromData(await api("/setup/advance", { method: "POST" }));
+    } catch (err) {
+      showBackendError("Couldn't advance setup — is the backend running on :8000?");
+    }
+  });
+}
+
+// --- Communication Agent -------------------------------------------------------
+
+async function renderCommunications() {
   const list = document.getElementById("comm-list");
   if (!list) return;
+  const comms = await api("/communications");
   list.innerHTML = "";
-  COMMUNICATIONS.forEach((c) => {
+  comms.forEach((c) => {
     const li = document.createElement("li");
     li.innerHTML = `
       <span class="channel">${c.channel}</span>
       <span class="subject">${c.subject}<br/><span class="recipient">${c.recipient} · ${c.time}</span></span>
       <span class="comm-status ${c.status}">${c.status}</span>
+      ${c.status === "Retrying" ? `<button class="retry-btn" data-id="${c.id}">Retry now</button>` : ""}
     `;
     list.appendChild(li);
   });
+  list.querySelectorAll(".retry-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      try {
+        await api(`/communications/${btn.dataset.id}/retry`, { method: "POST" });
+        renderCommunications();
+      } catch (err) {
+        showBackendError("Retry failed — is the backend running on :8000?");
+        btn.disabled = false;
+      }
+    });
+  });
 }
 
-function renderOverview() {
+// --- Overview ------------------------------------------------------------------
+
+async function renderOverview() {
   const root = document.getElementById("overview-grid");
   if (!root) return;
-  const doneCount = SETUP_STEPS.filter((s) => s.status === "done").length;
-  const pct = Math.round((doneCount / SETUP_STEPS.length) * 100);
-  const openTasks = TASKS.filter((t) => !t.done).length;
+  const o = await api("/overview");
   const cards = [
-    { label: "Profile Agent", href: "profile.html", h: EMPLOYEE.name, p: EMPLOYEE.title },
-    { label: "Setup Agent", href: "setup.html", h: pct + "% complete", p: `${doneCount}/${SETUP_STEPS.length} provisioning steps done` },
-    { label: "Knowledge Agent", href: "knowledge.html", h: KB_ANSWERS.length + " topics indexed", p: "Ask IT, HR, Security, Finance questions" },
-    { label: "Communication Agent", href: "communication.html", h: COMMUNICATIONS.length + " messages sent", p: "Welcome email, manager alerts, Teams, calendar" },
-    { label: "Daily Task Agent", href: "tasks.html", h: openTasks + " tasks open", p: `${INCIDENTS.length} incidents, ${TRAINING.length} trainings due` },
+    { label: "Profile Agent", href: "profile.html", h: o.employee.name, p: o.employee.title },
+    { label: "Setup Agent", href: "setup.html", h: o.setup.donePct + "% complete", p: `${o.setup.done}/${o.setup.total} provisioning steps done` },
+    { label: "Knowledge Agent", href: "knowledge.html", h: "Ask anything", p: "RAG over IT, HR, Security, Finance docs — cited" },
+    { label: "Communication Agent", href: "communication.html", h: o.communications + " messages sent", p: "Welcome email, manager alerts, Teams, calendar" },
+    { label: "Daily Task Agent", href: "tasks.html", h: o.tasks.open + " tasks open", p: `${o.incidents} incidents, ${o.training} trainings due` },
   ];
   root.innerHTML = cards
     .map(
@@ -226,15 +320,24 @@ function renderOverview() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderProfile();
-  renderOrgChart();
-  renderTasksPanel();
+  const tasks = [
+    renderProfile(),
+    renderOrgChart(),
+    renderTasksPanel(),
+    renderFaq(),
+    renderSetupSteps(),
+    renderCommunications(),
+    renderOverview(),
+  ];
   setupTabs();
   setupChat();
-  renderFaq();
   setupFaqSearch();
   setupFaqCategoryChips();
-  renderSetupSteps();
-  renderCommunications();
-  renderOverview();
+  setupAdvanceButton();
+
+  Promise.allSettled(tasks).then((results) => {
+    if (results.some((r) => r.status === "rejected")) {
+      showBackendError("Couldn't reach the backend at " + API_BASE + " — run `uvicorn backend.main:app --reload` from the repo root.");
+    }
+  });
 });

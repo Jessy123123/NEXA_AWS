@@ -1,0 +1,8 @@
+[
+  { "id": "vp", "name": "Azman Ismail", "role": "VP Engineering & CISO", "email": "azman.ismail@techventure.com.my", "teams": "azman.ismail" },
+  { "id": "mgr", "name": "Sarah Tan", "role": "Engineering Lead", "email": "sarah.tan@techventure.com.my", "teams": "sarah.tan" },
+  { "id": "me", "name": "Aisha Rahman", "role": "Software Engineer (You)", "email": "aisha.rahman@techventure.com.my", "teams": "aisha.rahman", "me": true },
+  { "id": "peer1", "name": "Rajesh Kumar", "role": "Backend Developer", "email": "rajesh.kumar@techventure.com.my", "teams": "rajesh.kumar" },
+  { "id": "peer2", "name": "Mei Ling", "role": "Frontend Developer", "email": "mei.ling@techventure.com.my", "teams": "mei.ling" },
+  { "id": "devops", "name": "David Lim", "role": "DevOps Lead", "email": "david.lim@techventure.com.my", "teams": "david.lim" }
+]
