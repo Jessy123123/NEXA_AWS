@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AWS-IQ — Setup Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@400;500&family=JetBrains+Mono&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="setup">
+<header class="topbar">
+  <h1>AWS-IQ</h1>
+  <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
+</header>
+<div class="error-banner" id="backend-error" hidden></div>
+
+<section class="page-header">
+  <h2>Setup Agent</h2>
+  <p>IT provisioning workflow — VPN, email, SharePoint, Okta SSO, and software installation.</p>
+  <span class="agent-badge">Backend: Setup Agent — simulates Lambda provisioning steps completing in order</span>
+</section>
+
+<main class="grid">
+  <section class="card wide-card" aria-label="Setup progress">
+    <h3>Provisioning Progress</h3>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="advance-btn-row">
+      <button id="advance-step-btn" type="button">Advance Next Step</button>
+      <p>Click to simulate the next provisioning Lambda reporting completion (e.g. IT confirms Okta SSO).</p>
+    </div>
+    <div id="setup-steps"></div>
+  </section>
+</main>
+
+<script src="session.js"></script>
+<script src="nav.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

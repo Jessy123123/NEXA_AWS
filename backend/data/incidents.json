@@ -1,0 +1,10 @@
+{
+  "EMP-A104": [
+    { "id": "i1", "label": "Code repo write access pending security training completion", "priority": "Medium" },
+    { "id": "i2", "label": "Okta SSO enrollment not yet confirmed by IT Operations", "priority": "Low" }
+  ],
+  "EMP-W205": [
+    { "id": "i1", "label": "SAP access pending CFO approval", "priority": "Medium" },
+    { "id": "i2", "label": "Okta SSO enrollment not yet confirmed by IT Operations", "priority": "Low" }
+  ]
+}
