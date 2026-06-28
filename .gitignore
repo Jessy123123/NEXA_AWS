@@ -1,0 +1,7 @@
+.kiro/cache/
+.kiro/*.local.*
+
+.env
+.env.local
+*.pem
+credentials
