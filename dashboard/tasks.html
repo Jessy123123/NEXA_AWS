@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AWS-IQ — Daily Task Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="tasks">
+<header class="topbar">
+  <h1>AWS-IQ</h1>
+  <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
+</header>
+
+<section class="page-header">
+  <h2>Daily Task Agent</h2>
+  <p>Today's onboarding tasks, open incidents, and required training assignments.</p>
+</section>
+
+<main class="grid">
+  <section class="card tasks-card wide-card" aria-label="Daily tasks">
+    <div class="tabs">
+      <button class="tab active" data-tab="tasks">Tasks</button>
+      <button class="tab" data-tab="incidents">Incidents</button>
+      <button class="tab" data-tab="training">Training</button>
+    </div>
+    <ul class="task-list" id="tasks-list"></ul>
+    <ul class="task-list" id="incidents-list" hidden></ul>
+    <ul class="task-list" id="training-list" hidden></ul>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AWS-IQ — Profile Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="profile">
+<header class="topbar">
+  <h1>AWS-IQ</h1>
+  <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
+</header>
+
+<section class="page-header">
+  <h2>Profile Agent</h2>
+  <p>Employee profile, role context, and organizational chart with one-click contact.</p>
+</section>
+
+<main class="grid">
+
+  <section class="card profile-card wide-card" aria-label="Employee profile">
+    <img class="avatar" src="https://i.pravatar.cc/100?img=47" alt="Employee photo" />
+    <div>
+      <h2 id="emp-name"></h2>
+      <p id="emp-title"></p>
+      <p id="emp-meta"></p>
+    </div>
+  </section>
+
+  <section class="card org-card wide-card" aria-label="Organizational chart">
+    <h3>Your Team</h3>
+    <p style="color:var(--muted); font-size:13px; margin-top:-6px;">Click a teammate to message on Teams or send an email.</p>
+    <div class="orgchart" id="orgchart"></div>
+    <div class="contact-popup" id="contact-popup" hidden></div>
+  </section>
+
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

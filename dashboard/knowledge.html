@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AWS-IQ — Knowledge Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="knowledge">
+<header class="topbar">
+  <h1>AWS-IQ</h1>
+  <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
+</header>
+
+<section class="page-header">
+  <h2>Knowledge Agent</h2>
+  <p>Ask questions across IT, HR, Security, and Finance policy documents — every answer is cited to its source.</p>
+</section>
+
+<main class="grid">
+
+  <section class="card chat-card" aria-label="Knowledge agent chat">
+    <h3>Ask AWS-IQ</h3>
+    <div class="chat-window" id="chat-window">
+      <div class="msg bot">Ask me anything about IT, HR, Security, or Finance policies — I'll cite the source.</div>
+    </div>
+    <form id="chat-form">
+      <input id="chat-input" type="text" placeholder="e.g. How do I set up VPN access?" autocomplete="off" />
+      <button type="submit">Send</button>
+    </form>
+  </section>
+
+  <section class="card faq-card" aria-label="Frequently asked questions">
+    <h3>FAQ</h3>
+    <div class="chip-row" id="faq-categories"></div>
+    <input id="faq-search" type="text" placeholder="Search FAQs..." />
+    <div id="faq-list"></div>
+  </section>
+
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>AWS-IQ — Setup Agent</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body data-page="setup">
+<header class="topbar">
+  <h1>AWS-IQ</h1>
+  <span class="tagline">Multi-Agent Onboarding Assistant — Prototype</span>
+</header>
+
+<section class="page-header">
+  <h2>Setup Agent</h2>
+  <p>IT provisioning workflow — VPN, email, SharePoint, Okta SSO, and software installation.</p>
+</section>
+
+<main class="grid">
+  <section class="card wide-card" aria-label="Setup progress">
+    <h3>Provisioning Progress</h3>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div id="setup-steps"></div>
+  </section>
+</main>
+
+<script src="data.js"></script>
+<script src="nav.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
