@@ -1,0 +1,62 @@
+services:
+  localstack:
+    image: localstack/localstack-pro:latest
+    container_name: awsiq-localstack
+    ports:
+      - "4566:4566"       # LocalStack Gateway (all services)
+      - "4510-4559:4510-4559"  # External service port range
+    environment:
+      # LocalStack Pro auth token — set this in your shell or .env.local file
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
+
+      # Services to emulate
+      - SERVICES=s3,dynamodb,lambda,apigateway,sqs,ses,bedrock
+
+      # Default AWS region
+      - DEFAULT_REGION=us-east-1
+
+      # Debug level: 0=off, 1=info, 2=debug
+      - DEBUG=${DEBUG:-0}
+
+      # Persistence directory (mounted volume keeps state between restarts)
+      - PERSISTENCE=1
+
+      # Lambda executor — docker for full isolation, local for faster cold starts
+      - LAMBDA_EXECUTOR=${LAMBDA_EXECUTOR:-docker}
+
+      # Docker host so LocalStack can spin up Lambda containers
+      - DOCKER_HOST=unix:///var/run/docker.sock
+
+      # Disable telemetry
+      - DISABLE_EVENTS=1
+
+    volumes:
+      # Docker socket for Lambda container execution
+      - /var/run/docker.sock:/var/run/docker.sock
+
+      # Auto-startup init scripts (run once on first boot)
+      - ./localstack-init:/etc/localstack/init/ready.d
+
+      # Dataset folder mounted for seeding access
+      - ./dataset:/opt/dataset:ro
+
+      # Persistent LocalStack state between container restarts
+      - localstack-data:/var/lib/localstack
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+    networks:
+      - awsiq-net
+
+volumes:
+  localstack-data:
+    driver: local
+
+networks:
+  awsiq-net:
+    driver: bridge

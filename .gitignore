@@ -10,3 +10,20 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg
+pip-wheel-metadata/
+
+# LocalStack persistent state
+.localstack/
+
+# Local environment — copy .env.local.template instead
+.env.local
